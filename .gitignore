@@ -1,0 +1,10 @@
+# binaries
+myshell
+debugger
+sample_code
+*.o
+
+# lab-specific binaries
+lab1/mini-shell/myshell
+lab2/mini-debugger/debugger
+lab2/mini-debugger/sample_code
