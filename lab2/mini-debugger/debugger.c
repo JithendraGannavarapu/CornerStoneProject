@@ -19,7 +19,9 @@ int main(int argc, char *argv[]) {
     } else {
         int status;
         waitpid(pid, &status, 0);
-        printf("Program is completed\n");
+        if (WIFSTOPPED(status)) {
+    printf("child process is stopped by using the signal: %d. Signal is called as SIGTRAP\n", WSTOPSIG(status));
+}
     }
 
     return 0;
