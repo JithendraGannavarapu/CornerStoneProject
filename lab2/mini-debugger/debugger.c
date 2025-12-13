@@ -20,8 +20,14 @@ int main(int argc, char *argv[]) {
         int status;
         waitpid(pid, &status, 0);
         if (WIFSTOPPED(status)) {
-    printf("child process is stopped by using the signal: %d. Signal is called as SIGTRAP\n", WSTOPSIG(status));
-}
+            printf("child process is stopped by using the signal %d. Signal is called as SIGTRAP\n", WSTOPSIG(status));
+        }
+
+        ptrace(PTRACE_CONT, pid, NULL, NULL);
+        waitpid(pid, &status, 0);
+        if (WIFEXITED(status)) {
+            printf("The exit status of child is  %d\n", WEXITSTATUS(status));
+        }
     }
 
     return 0;
