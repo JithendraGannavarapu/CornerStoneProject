@@ -43,32 +43,35 @@ int main(int argc, char *argv[]) {
         if (WIFSTOPPED(status)) {
             printf("Hit breakpoint at main()\n");
         }
+        put_data(pid, main_addr, original);
+        struct user_regs_struct regs;
 
-        // int steps = 0;
+        ptrace(PTRACE_GETREGS, pid, NULL, &regs);
 
-        // while (1) {
-        //     ptrace(PTRACE_SINGLESTEP, pid, NULL, NULL);
-        //     waitpid(pid, &status, 0);
+        regs.rip = regs.rip - 1;
 
-        //     if (WIFSTOPPED(status)) {
-        //         printf("Step %d: child stopped by signal %d\n",steps, WSTOPSIG(status));
-        //         struct user_regs_struct regs;
-        //         ptrace(PTRACE_GETREGS, pid, NULL, &regs);
-        //         printf("Step %d: RIP = 0x%llx\n",steps, regs.rip);
-        //         steps++;
+        ptrace(PTRACE_SETREGS, pid, NULL, &regs);
 
-        //         if (steps == 5) {
-        //             printf("Stopping after 5 steps\n");
-        //             break;
-        //         }
-        //     }
+        int steps = 0;
 
-        //     if (WIFEXITED(status)) {
-        //         printf("Child exited with status %d\n",
-        //             WEXITSTATUS(status));
-        //         break;
-        //     }
-        // }
+        while (steps < 10) {
+            ptrace(PTRACE_SINGLESTEP, pid, NULL, NULL);
+            waitpid(pid, &status, 0);
+
+            if (WIFSTOPPED(status)) {
+                struct user_regs_struct regs;
+                ptrace(PTRACE_GETREGS, pid, NULL, &regs);
+
+                printf("Step %d: RIP = 0x%llx\n", steps, regs.rip);
+                steps++;
+            }
+
+            if (WIFEXITED(status)) {
+                printf("Program exited\n");
+                break;
+            }
+        }
+
 
     }
 
