@@ -1,7 +1,7 @@
 %{
 #include <stdio.h>
 #include <string.h>
-#include <y.tab.h>
+#include "parser.tab.h"
 
 int line_num = 1;
 %}
@@ -13,8 +13,8 @@ int line_num = 1;
 "else"      { return ELSE; }
 "while"     { return WHILE; }
 
-[a-zA-Z_][a-zA-Z0-9_]* { return IDENTIFIER; }
-[0-9]+                 { return INTEGER; }
+[a-zA-Z_][a-zA-Z0-9_]* { yylval.sval = strdup(yytext); return IDENTIFIER; }
+[0-9]+                 { yylval.ival = atoi(yytext); return INTEGER; }
 
 "="         { return ASSIGN; }
 "+"         { return PLUS; }
@@ -32,7 +32,7 @@ int line_num = 1;
 "!="        { return NEQ; }
 "<="        { return LE; }
 ">="        { return GE; }
-"//".* ; 
+
 [ \t\r]+    ; /* Ignore whitespace [cite: 108] */
 \n          { line_num++; }
 
