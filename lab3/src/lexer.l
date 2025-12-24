@@ -38,7 +38,10 @@ int line_num = 1;
 
 "//".* ; /* Ignore comments  */
 
-.           { printf("Error: Unknown char '%s' at line %d\n", yytext, line_num); }
+.           { 
+    printf("Error: Unknown char '%s' at line %d\n", yytext, line_num);
+    exit(1);
+    }
 
 %%
 
