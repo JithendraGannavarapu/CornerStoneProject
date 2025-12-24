@@ -7,6 +7,7 @@ typedef enum {
     NODE_IF,
     NODE_WHILE,
     NODE_BINOP,
+    NODE_UNARY,
     NODE_INT,
     NODE_ID,
     NODE_STMT_LIST
@@ -14,18 +15,19 @@ typedef enum {
 
 typedef struct ASTNode {
     NodeType type;
-    char* name;                 // For identifiers
-    int value;                  // For integer literals
-    char* op;                   // For operators like "+", "=="
-    struct ASTNode *left;       // Generic child 1
-    struct ASTNode *right;      // Generic child 2
-    struct ASTNode *condition;  // For if/while
-    struct ASTNode *body;       // For loop/if bodies
-    struct ASTNode *else_body;  // For if-else
-    struct ASTNode *next;       // To link statements in a list
+    char* name;                
+    int value;                 
+    char* op;    
+    char* val_str;      
+    int val_int;               
+    struct ASTNode *left;      
+    struct ASTNode *right;      
+    struct ASTNode *condition;  
+    struct ASTNode *body;       
+    struct ASTNode *else_body;  
+    struct ASTNode *next;       
 } ASTNode;
 
-// Function prototypes
 ASTNode* create_int_node(int val);
 ASTNode* create_id_node(char* name);
 ASTNode* create_binop(char* op, ASTNode* left, ASTNode* right);
@@ -34,7 +36,7 @@ ASTNode* create_assign(char* name, ASTNode* expr);
 ASTNode* create_if(ASTNode* cond, ASTNode* body, ASTNode* else_body);
 ASTNode* create_while(ASTNode* cond, ASTNode* body);
 ASTNode* create_node_list(ASTNode* list, ASTNode* stmt);
-
+ASTNode* create_unary(char* op, struct ASTNode* child);
 void print_ast(ASTNode* node, int level);
-
+void print_output(ASTNode* root);
 #endif

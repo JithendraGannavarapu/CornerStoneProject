@@ -60,7 +60,7 @@ void check_symbol(char* name) {
 %token SEMI LPAREN RPAREN LBRACE RBRACE
 
 %type <nval> program statement_list statement block
-%type <nval> expression equality comparison term factor primary
+%type <nval> expression equality comparison term factor unary primary
 
 %start program
 
@@ -132,10 +132,16 @@ term:
     ;
 
 factor:
-    primary { $$ = $1; }
-    | factor MULT primary { $$ = create_binop("*", $1, $3); }
-    | factor DIV primary { $$ = create_binop("/", $1, $3); }
-    ;
+    unary
+  | factor MULT unary { $$ = create_binop("*", $1, $3); }
+  | factor DIV unary  { $$ = create_binop("/", $1, $3); }
+  ;
+
+unary:
+    PLUS unary        { $$ = create_unary("+", $2); }
+  | MINUS unary       { $$ = create_unary("-", $2); }
+  | primary           { $$ = $1; }
+  ;
 
 primary:
     INTEGER { $$ = create_int_node($1); }

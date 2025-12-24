@@ -74,6 +74,15 @@ ASTNode* create_node_list(ASTNode* list, ASTNode* stmt) {
     return list;
 }
 
+struct ASTNode* create_unary(char* op, struct ASTNode* child) {
+    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    node->type = NODE_UNARY;
+    node->val_str = strdup(op);
+    node->left = child;
+    node->right = NULL;
+    node->next = NULL; 
+    return node;
+}
 void print_indent(int level) {
     for (int i = 0; i < level; i++) printf("  ");
 }
@@ -89,16 +98,20 @@ void print_ast(ASTNode* node, int level) {
             print_ast(node->left, level + 1);
             break;
         case NODE_ASSIGN:
-            printf("ASSIGN: %s\n", node->name);
+            printf("ASSIGNMENT: %s\n", node->name);
             print_ast(node->left, level + 1);
             break;
         case NODE_BINOP:
-            printf("OP: %s\n", node->op);
+            printf("OPERATOR: %s\n", node->op);
             print_ast(node->left, level + 1);
             print_ast(node->right, level + 1);
-            break;
+            break;  
+        case NODE_UNARY:
+        printf("UNARY: %s\n", node->val_str);
+        print_ast(node->left, level + 1);
+        break;
         case NODE_INT:
-            printf("INT: %d\n", node->value);
+            printf("VALUE: %d\n", node->value);
             break;
         case NODE_ID:
             printf("ID: %s\n", node->name);
@@ -126,4 +139,103 @@ void print_ast(ASTNode* node, int level) {
     if (node->next) {
         print_ast(node->next, level);
     }
+}
+typedef struct {
+    char name[50];
+    int value;
+} Memory;
+
+Memory mem[1000];
+int mem_count = 0;
+
+int get_val(char* name) {
+    for(int i=0; i<mem_count; i++) {
+        if(strcmp(mem[i].name, name) == 0) return mem[i].value;
+    }
+    printf("Runtime Error: Variable %s not found\n", name);
+    exit(1);
+}
+
+void set_val(char* name, int val) {
+    for(int i=0; i<mem_count; i++) {
+        if(strcmp(mem[i].name, name) == 0) {
+            mem[i].value = val;
+            return;
+        }
+    }
+    strcpy(mem[mem_count].name, name);
+    mem[mem_count].value = val;
+    mem_count++;
+}
+
+int eval(ASTNode* node) {
+    if (!node) return 0;
+
+    if (node->type == NODE_INT) {
+        return node->value;
+    }
+    else if (node->type == NODE_ID) {
+        return get_val(node->name);
+    }
+    else if (node->type == NODE_UNARY) {
+        int val = eval(node->left);
+        if (strcmp(node->val_str, "-") == 0) return -val;
+        return val; 
+    }
+    else if (node->type == NODE_BINOP) {
+        int lhs = eval(node->left);
+        int rhs = eval(node->right);
+        if (strcmp(node->op, "+") == 0) return lhs + rhs;
+        if (strcmp(node->op, "-") == 0) return lhs - rhs;
+        if (strcmp(node->op, "*") == 0) return lhs * rhs;
+        if (strcmp(node->op, "/") == 0) {
+        if (rhs == 0) {
+            fprintf(stderr, "Runtime Error: Division by zero detected!\n");
+            exit(1);
+        }
+            return lhs / rhs;
+        }
+        if (strcmp(node->op, "==") == 0) return lhs == rhs;
+        if (strcmp(node->op, "!=") == 0) return lhs != rhs;
+        if (strcmp(node->op, "<") == 0) return lhs < rhs;
+        if (strcmp(node->op, ">") == 0) return lhs > rhs;
+        if (strcmp(node->op, "<=") == 0) return lhs <= rhs;
+        if (strcmp(node->op, ">=") == 0) return lhs >= rhs;
+    }
+    return 0;
+}
+
+void exec(ASTNode* node) {
+    if (!node) return;
+
+    if (node->type == NODE_VAR_DECL) {
+        int val = 0;
+        if (node->left) val = eval(node->left);
+        set_val(node->name, val);
+        printf(">> Executed: var %s = %d\n", node->name, val);
+    }
+    else if (node->type == NODE_ASSIGN) {
+        int val = eval(node->left);
+        set_val(node->name, val);
+        printf(">> Executed: %s = %d\n", node->name, val);
+    }
+    else if (node->type == NODE_IF) {
+        if (eval(node->condition)) {
+            exec(node->body);
+        } else if (node->else_body) {
+            exec(node->else_body);
+        }
+    }
+    else if (node->type == NODE_WHILE) {
+        while (eval(node->condition)) {
+            exec(node->body);
+        }
+    }
+    if (node->next) exec(node->next);
+}
+
+void print_output(ASTNode* root) {
+    printf("\n--- EXECUTION OUTPUT ---\n");
+    exec(root);
+    printf("------------------------\n");
 }

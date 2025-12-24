@@ -12,5 +12,6 @@ int main() {
     }
     printf("Parse Successful! Printing AST:\n");
     print_ast(root, 0);
+    print_output(root);
     return 0;
 }

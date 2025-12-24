@@ -33,10 +33,10 @@ int line_num = 1;
 "<="        { return LE; }
 ">="        { return GE; }
 
-[ \t\r]+    ; /* Ignore whitespace [cite: 108] */
+[ \t\r]+    ; 
 \n          { line_num++; }
-
-"//".* ; /* Ignore comments  */
+"/*"([^*]|(\*+[^*/]))*\*+"/"  
+"//".* ; 
 
 .           { 
     printf("Error: Unknown char '%s' at line %d\n", yytext, line_num);
