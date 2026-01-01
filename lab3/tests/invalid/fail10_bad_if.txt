@@ -1,4 +1,0 @@
-if x < 10 {
-    x = 0;
-}
-// Missing parentheses around condition
