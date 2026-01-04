@@ -24,10 +24,43 @@ void VM::execute(int32_t opcode) {
             stack.push_back(program[pc++]);
             break;
 
-        case OP_ADD: {
+        case OP_ADD:{ 
             int32_t b = pop();
             int32_t a = pop();
             stack.push_back(a + b);
+            break;
+        }
+
+        case OP_SUB: {
+            int32_t b = pop();
+            int32_t a = pop();
+            stack.push_back(a - b);
+            break;
+        }
+
+        case OP_MUL: {
+            int32_t b = pop();
+            int32_t a = pop();
+            stack.push_back(a * b);
+            break;
+        }
+
+        case OP_DIV: {
+            int32_t b = pop();
+            int32_t a = pop();
+            if (b == 0) {
+                cerr << "Division by zero\n";
+                running = false;
+                break;
+            }
+            stack.push_back(a / b);
+            break;
+        }
+
+        case OP_CMP: {
+            int32_t b = pop();
+            int32_t a = pop();
+            stack.push_back(a < b ? 1 : 0);
             break;
         }
 
