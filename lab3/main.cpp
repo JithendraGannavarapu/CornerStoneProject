@@ -1,58 +1,18 @@
 #include <iostream>
-#include <vector>
-#include <cstdint>
+#include "Assembler.h"
+#include "VirtualMachine.h"
 
 using namespace std;
 
-/* Opcodes */
-enum Opcode {
-    OP_HALT = 0xFF
-};
-
-/* Virtual Machine */
-class VM {
-private:
-    vector<int32_t> program;
-    int pc;
-    bool running;
-
-public:
-    VM(const vector<int32_t>& bytecode)
-        : program(bytecode), pc(0), running(true) {}
-
-    void run() {
-        while (running) {
-            int32_t instruction = fetch();
-            execute(instruction);
-        }
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        cout << "Usage: ./vm program.asm\n";
+        return 1;
     }
 
-private:
-    int32_t fetch() {
-        return program[pc++];
-    }
-
-    void execute(int32_t opcode) {
-        switch (opcode) {
-            case OP_HALT:
-                running = false;
-                break;
-
-            default:
-                cerr << "Unknown opcode: " << opcode << endl;
-                running = false;
-        }
-    }
-};
-
-int main() {
-    vector<int32_t> bytecode = {
-        OP_HALT
-    };
-
+    vector<int32_t> bytecode = assemble(argv[1]);
     VM vm(bytecode);
     vm.run();
 
-    cout << "VM halted successfully." << endl;
     return 0;
 }
