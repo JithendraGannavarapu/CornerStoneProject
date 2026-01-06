@@ -5,7 +5,7 @@
 using namespace std;
 
 VM::VM(const vector<int32_t>& bytecode)
-    : program(bytecode), pc(0), running(true) {}
+    : program(bytecode), pc(0), running(true), memory(1024, 0) {}
 
 int32_t VM::pop() {
     if (stack.empty()) {
@@ -119,6 +119,33 @@ void VM::execute(int32_t opcode) {
             }
             break;
         }
+        case OP_STORE: {
+            int32_t idx = program[pc++];
+
+            if (!validMemory(idx)) {
+                cerr << "Invalid STORE index\n";
+                running = false;
+                break;
+            }
+
+            int32_t val = pop();
+            memory[idx] = val;
+            break;
+        }
+
+        case OP_LOAD: {
+            int32_t idx = program[pc++];
+
+            if (!validMemory(idx)) {
+                cerr << "Invalid LOAD index\n";
+                running = false;
+                break;
+            }
+
+            stack.push_back(memory[idx]);
+            break;
+        }
+
 
         case OP_HALT: {
             running = false;
@@ -162,4 +189,7 @@ bool VM::validAddress(int addr) {
     return addr >= 0 && addr < program.size();
 }
 
+bool VM::validMemory(int idx) {
+    return idx >= 0 && idx < memory.size();
+}
 

@@ -1,12 +1,16 @@
-PUSH 2        
-
-DUP           
+PUSH 2
+STORE 0      # x = 2
+#loop
+LOAD 0
 PUSH 10
-CMP           
-JZ 13         
+CMP
+JZ 20        # if x >= 10 exit
 
+LOAD 0
 PUSH 3
-ADD          
+ADD
+STORE 0
+JMP 4
 
-JMP 2
+LOAD 0
 HALT

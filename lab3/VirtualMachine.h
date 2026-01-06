@@ -10,15 +10,18 @@ public:
     void run();
     void printFinalStack();
     bool validAddress(int addr);
+    bool validMemory(int idx);
 
 private:
     std::vector<int32_t> program;
     std::vector<int32_t> stack;
+    std::vector<int32_t> memory;
     int pc;
     bool running;
 
     int32_t pop();
     void execute(int32_t opcode);
 };
+
 
 #endif

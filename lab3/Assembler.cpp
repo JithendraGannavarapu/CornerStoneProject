@@ -3,6 +3,7 @@
 #include <fstream>
 #include <unordered_map>
 #include <iostream>
+#include <sstream>
 
 using namespace std;
 
@@ -19,6 +20,8 @@ vector<int32_t> assemble(const string& filename) {
         {"JMP", OP_JMP},
         {"JZ",  OP_JZ},
         {"JNZ", OP_JNZ},
+        {"STORE", OP_STORE},
+        {"LOAD",  OP_LOAD},
         {"HALT", OP_HALT}
 
     };
@@ -32,22 +35,35 @@ vector<int32_t> assemble(const string& filename) {
     }
 
     string instr;
-    while (file >> instr) {
+    string line;
+    while (getline(file, line)) {
+        size_t commentPos = line.find('#');
+        if (commentPos != string::npos) {
+            line = line.substr(0, commentPos);
+        }
+        if (line.empty()) continue;
+
+        stringstream ss(line);
+        string instr;
+        ss >> instr;
+
         if (opcodeMap.count(instr) == 0) {
             cerr << "Invalid instruction: " << instr << endl;
             exit(1);
         }
 
         bytecode.push_back(opcodeMap[instr]);
+
         if (instr == "PUSH" || instr == "JMP" ||
-        instr == "JZ"   || instr == "JNZ") {
+            instr == "JZ"   || instr == "JNZ" ||
+            instr == "STORE"|| instr == "LOAD") {
 
-        int32_t val;
-        file >> val;
-        bytecode.push_back(val);
+            int32_t val;
+            ss >> val;
+            bytecode.push_back(val);
+        }
     }
 
-    }
 
     return bytecode;
 }
