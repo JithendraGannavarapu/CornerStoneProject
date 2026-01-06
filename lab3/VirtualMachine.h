@@ -16,6 +16,7 @@ private:
     std::vector<int32_t> program;
     std::vector<int32_t> stack;
     std::vector<int32_t> memory;
+    std::vector<int32_t> callStack;
     int pc;
     bool running;
 

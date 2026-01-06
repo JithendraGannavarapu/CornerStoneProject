@@ -153,6 +153,31 @@ void VM::execute(int32_t opcode) {
             break;
         }   
 
+        case OP_CALL: {
+            int32_t addr = program[pc++];
+
+            if (!validAddress(addr)) {
+                cerr << "Invalid CALL address\n";
+                running = false;
+                break;
+            }
+
+            callStack.push_back(pc);  
+            pc = addr;                
+            break;
+        }
+        
+        case OP_RET: {
+            if (callStack.empty()) {
+                cerr << "RET with empty call stack\n";
+                running = false;
+                break;
+            }
+
+            pc = callStack.back();
+            callStack.pop_back();
+            break;
+        }
 
         default:
             cerr << "Unknown opcode\n";

@@ -22,7 +22,10 @@ vector<int32_t> assemble(const string& filename) {
         {"JNZ", OP_JNZ},
         {"STORE", OP_STORE},
         {"LOAD",  OP_LOAD},
-        {"HALT", OP_HALT}
+        {"HALT", OP_HALT},
+        {"CALL", OP_CALL},
+        {"RET",  OP_RET}
+
 
     };
 
@@ -54,9 +57,8 @@ vector<int32_t> assemble(const string& filename) {
 
         bytecode.push_back(opcodeMap[instr]);
 
-        if (instr == "PUSH" || instr == "JMP" ||
-            instr == "JZ"   || instr == "JNZ" ||
-            instr == "STORE"|| instr == "LOAD") {
+        if (instr == "PUSH" || instr == "JMP" ||instr == "JZ"   || instr == "JNZ" ||
+            instr == "STORE"|| instr == "LOAD" || instr == "CALL") {
 
             int32_t val;
             ss >> val;
