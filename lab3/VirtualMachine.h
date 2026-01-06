@@ -9,6 +9,7 @@ public:
     VM(const std::vector<int32_t>& bytecode);
     void run();
     void printFinalStack();
+    bool validAddress(int addr);
 
 private:
     std::vector<int32_t> program;

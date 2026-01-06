@@ -16,7 +16,11 @@ vector<int32_t> assemble(const string& filename) {
         {"MUL", OP_MUL},
         {"DIV", OP_DIV},
         {"CMP", OP_CMP},
+        {"JMP", OP_JMP},
+        {"JZ",  OP_JZ},
+        {"JNZ", OP_JNZ},
         {"HALT", OP_HALT}
+
     };
 
     vector<int32_t> bytecode;
@@ -35,12 +39,14 @@ vector<int32_t> assemble(const string& filename) {
         }
 
         bytecode.push_back(opcodeMap[instr]);
+        if (instr == "PUSH" || instr == "JMP" ||
+        instr == "JZ"   || instr == "JNZ") {
 
-        if (instr == "PUSH") {
-            int32_t val;
-            file >> val;
-            bytecode.push_back(val);
-        }
+        int32_t val;
+        file >> val;
+        bytecode.push_back(val);
+    }
+
     }
 
     return bytecode;

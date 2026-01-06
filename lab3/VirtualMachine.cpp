@@ -63,6 +63,62 @@ void VM::execute(int32_t opcode) {
             stack.push_back(a < b ? 1 : 0);
             break;
         }
+        
+        case OP_JMP: {
+        int32_t addr = program[pc++];
+            if (!validAddress(addr)) {
+                cerr << "Invalid JMP address\n";
+                running = false;
+                break;
+            }
+            pc = addr;
+            break;
+        }
+
+        case OP_DUP: {
+            if (stack.empty()) {
+                cerr << "DUP on empty stack\n";
+                running = false;
+                break;
+            }
+            stack.push_back(stack.back());
+            break;
+        }
+
+        case OP_POP: {
+            pop();
+            break;
+        }
+
+        case OP_JZ: {
+            int32_t addr = program[pc++];
+            int32_t cond = pop();  
+
+            if (cond == 0) {
+                if (!validAddress(addr)) {
+                    cerr << "Invalid JZ address\n";
+                    running = false;
+                    break;
+                }
+                pc = addr;
+            }
+            break;
+        }
+
+        case OP_JNZ: {
+            int32_t addr = program[pc++];
+            int32_t cond = pop();
+
+            if (cond != 0) {
+                if (!validAddress(addr)) {
+                    cerr << "Invalid JNZ address\n";
+                    running = false;
+                    break;
+                }
+                pc = addr;
+            }
+            break;
+        }
 
         case OP_HALT: {
             running = false;
@@ -78,7 +134,13 @@ void VM::execute(int32_t opcode) {
 }
 
 void VM::run() {
+    int steps = 0;
+    const int MAX_STEPS = 1000000;
     while (running) {
+        if (++steps > MAX_STEPS) {
+            cerr << "Execution aborted: possible infinite loop\n";
+            break;
+        }
         execute(program[pc++]);
     }
 }
@@ -95,4 +157,9 @@ void VM::printFinalStack() {
         cout << "\nTop of Stack (RESULT): " << stack.back() << endl;
     }
 }
+
+bool VM::validAddress(int addr) {
+    return addr >= 0 && addr < program.size();
+}
+
 
