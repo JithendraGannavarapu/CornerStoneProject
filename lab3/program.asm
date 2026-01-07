@@ -1,13 +1,45 @@
-# main
-CALL 3
-HALT
+# x = 0
+PUSH 0
+STORE 0
 
-# f
-CALL 9
-PUSH 10
-ADD
-RET
+# i = 0
+PUSH 0
+STORE 1
 
-# g
-PUSH 20
-RET
+OUTER_LOOP:
+    LOAD 1
+    PUSH 3
+    CMP
+    JZ OUTER_END
+
+    PUSH 0
+    STORE 2
+
+INNER_LOOP:
+    LOAD 2
+    PUSH 2
+    CMP
+    JZ INNER_END
+
+    LOAD 0
+    PUSH 1
+    ADD
+    STORE 0
+
+    LOAD 2
+    PUSH 1
+    ADD
+    STORE 2
+
+    JMP INNER_LOOP
+
+INNER_END:
+    LOAD 1
+    PUSH 1
+    ADD
+    STORE 1
+    JMP OUTER_LOOP
+
+OUTER_END:
+    LOAD 0
+    HALT
