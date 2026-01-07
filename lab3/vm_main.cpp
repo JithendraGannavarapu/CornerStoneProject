@@ -26,5 +26,7 @@ int main(int argc, char* argv[]) {
 
     VM vm(bytecode);
     vm.run();
+    vm.printFinalStack();
+    vm.printStats();
     return 0;
 }

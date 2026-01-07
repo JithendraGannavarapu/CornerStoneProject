@@ -67,7 +67,7 @@ vector<int32_t> assemble(const string& filename) {
         stringstream ss(l);
         string token;
         ss >> token;
-
+        if (token.empty()) continue;
         if (token.back() == ':') {
             string label = token.substr(0, token.size() - 1);
             if (labelTable.count(label)) {
@@ -92,8 +92,7 @@ vector<int32_t> assemble(const string& filename) {
         stringstream ss(l);
         string instr;
         ss >> instr;
-
-        if (instr.back() == ':')
+        if (instr.empty() || instr.back() == ':')
             continue;
 
         int32_t opcode = opcodeMap[instr];

@@ -1,0 +1,50 @@
+# Nested loop test
+
+# x = 0
+PUSH 0
+STORE 0
+
+# i = 0
+PUSH 0
+STORE 1
+
+OUTER:
+LOAD 1
+PUSH 3
+CMP
+JZ DONE
+
+# j = 0
+PUSH 0
+STORE 2
+
+INNER:
+LOAD 2
+PUSH 2
+CMP
+JZ NEXT
+
+# x = x + 1
+LOAD 0
+PUSH 1
+ADD
+STORE 0
+
+# j = j + 1
+LOAD 2
+PUSH 1
+ADD
+STORE 2
+
+JMP INNER
+
+NEXT:
+LOAD 1
+PUSH 1
+ADD
+STORE 1
+JMP OUTER
+
+DONE:
+LOAD 0
+HALT
