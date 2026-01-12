@@ -4,132 +4,313 @@
 
 using namespace std;
 
-// --- Constructor & Destructor ---
 VM::VM(const vector<int32_t>& bytecode)
     : program(bytecode), 
-      memory(1024),     // Default Value() is int 0
-      objects(nullptr), // Heap is empty
+      memory(1024, 0), 
+      instructionCount(0),
+      maxStackDepth(0),
       pc(0), 
-      running(true),
-      instructionCount(0) {}
-
-VM::~VM() {
-    // Cleanup: Free all objects on exit
-    Object* obj = objects;
-    while (obj != nullptr) {
-        Object* next = obj->next;
-        delete obj;
-        obj = next;
-    }
-}
-
-// --- Stack Helpers ---
-void VM::push(Value v) {
-    stack.push_back(v);
-}
-
-void VM::pushStack(Value v) { // Wrapper for tests
-    push(v);
-}
+      running(true) {}
 
 Value VM::pop() {
-    if (stack.empty()) return INT_VAL(0);
+    if (stack.empty()) {
+        std::cerr << "Stack underflow\n";
+        running = false;
+        return INT_VAL(0);
+    }
     Value v = stack.back();
     stack.pop_back();
     return v;
 }
 
-// --- Lab 5: Garbage Collector Implementation ---
-
-// 1. Mark Phase [cite: 381]
-void VM::markObject(Object* obj) {
-    if (obj == nullptr || obj->marked) return;
-
-    obj->marked = true; // Mark node
-
-    if (obj->type == OBJ_PAIR) {
-        ObjPair* pair = (ObjPair*)obj;
-        markObject(pair->left);  // Recurse Left
-        markObject(pair->right); // Recurse Right
-    }
+void VM::push(Value v) {
+    stack.push_back(v);
 }
 
-void VM::markValue(Value v) {
-    if (IS_OBJ(v)) markObject(AS_OBJ(v));
-}
 
-// 2. Sweep Phase [cite: 382]
-void VM::sweep() {
-    Object** object = &objects;
-    while (*object != nullptr) {
-        if (!(*object)->marked) {
-            // Unreached -> Delete
-            Object* unreached = *object;
-            *object = unreached->next;
-            delete unreached;
-        } else {
-            // Reached -> Reset mark for next time
-            (*object)->marked = false;
-            object = &(*object)->next;
-        }
-    }
-}
-
-// 3. GC Driver [cite: 396]
-void VM::gc() {
-    // Mark Roots: Stack
-    for (const Value& v : stack) markValue(v);
-    
-    // Mark Roots: Global Memory
-    for (const Value& v : memory) markValue(v);
-    
-    // Sweep Garbage
-    sweep();
-}
-
-// --- Allocator [cite: 379] ---
-Object* VM::allocatePair(Object* a, Object* b) {
-    ObjPair* pair = new ObjPair();
-    pair->obj.type = OBJ_PAIR;
-    pair->obj.marked = false;
-    
-    // Add to linked list (Heap)
-    pair->obj.next = objects;
-    objects = (Object*)pair;
-    
-    pair->left = a;
-    pair->right = b;
-    return (Object*)pair;
-}
-
-// --- Execution (Updated for Value types) ---
 void VM::execute(int32_t opcode) {
     switch (opcode) {
         case OP_PUSH:
-            // Convert raw bytecode int to Value
-            push(INT_VAL(program[pc++])); 
+
+            push(INT_VAL(program[pc++]));
+            updateMaxStackDepth();
             break;
 
-        case OP_ADD: {
+        case OP_ADD:{ 
             Value b = pop();
+            if (!running) break; 
             Value a = pop();
-            // MUST unwrap integers
-            if (IS_INT(a) && IS_INT(b)) 
-                push(INT_VAL(AS_INT(a) + AS_INT(b)));
+            if (!running) break; 
+
+            if (!IS_INT(a) || !IS_INT(b)) {
+                std::cerr << "ADD expects integers\n";
+                running = false;
+                return;
+            }
+
+            push(INT_VAL(AS_INT(a) + AS_INT(b)));
+
+            updateMaxStackDepth();
+            break;
+        }
+
+        case OP_SUB: {
+            Value b = pop();
+            if (!running) break; 
+            Value a = pop();
+            if (!running) break; 
+
+            if (!IS_INT(a) || !IS_INT(b)) {
+                std::cerr << "ADD expects integers\n";
+                running = false;
+                return;
+            }
+
+            push(INT_VAL(AS_INT(a) - AS_INT(b)));
+
+            updateMaxStackDepth();
+            break;
+            break;
+        }
+
+        case OP_MUL: {
+            Value b = pop();
+            if (!running) break; 
+            Value a = pop();
+            if (!running) break; 
+
+            if (!IS_INT(a) || !IS_INT(b)) {
+                std::cerr << "ADD expects integers\n";
+                running = false;
+                return;
+            }
+
+            push(INT_VAL(AS_INT(a) * AS_INT(b)));
+
+            updateMaxStackDepth();
+            break;
+        }
+
+
+        case OP_DIV: {
+            Value b = pop();
+            if (!running) break; 
+            Value a = pop();
+            if (!running) break; 
+
+            if (!IS_INT(a) || !IS_INT(b)) {
+                std::cerr << "ADD expects integers\n";
+                running = false;
+                return;
+            }
+
+            if (AS_INT(b) == 0) {
+                cerr << "Division by zero\n";
+                running = false;
+                break;
+            }
+
+            push(INT_VAL(AS_INT(a) / AS_INT(b)));
+            updateMaxStackDepth();
+            break;
+        }
+
+        case OP_CMP: {
+            Value b = pop();
+            if (!running) break;
+            Value a = pop();
+            if (!running) break;
+
+            if (!IS_INT(a) || !IS_INT(b)) {
+                cerr << "CMP expects integers\n";
+                running = false;
+                break;
+            }
+
+            push(INT_VAL(AS_INT(a) < AS_INT(b) ? 1 : 0));
+            updateMaxStackDepth();
+            break;
+        }
+
+        
+        case OP_JMP: {
+        int32_t addr = program[pc++];
+            if (!validAddress(addr)) {
+                cerr << "Invalid JMP address\n";
+                running = false;
+                break;
+            }
+            pc = addr;
+            break;
+        }
+
+        case OP_DUP: {
+            if (stack.empty()) {
+                std::cerr << "DUP on empty stack\n";
+                running = false;
+                return;
+            }
+            push(stack.back());
+
+            updateMaxStackDepth();
+            break;
+        }
+
+        case OP_POP: {
+            pop();
+            break;
+        }
+
+        case OP_JZ: {
+            int32_t addr = program[pc++];
+            Value cond = pop();
+            if (!IS_INT(cond)) {
+                cerr << "JZ expects integer condition\n";
+                running = false;
+                break;
+            }
+            if (AS_INT(cond) == 0) {
+                pc = addr;
+            }
+            break;
+        }
+
+
+        case OP_JNZ: {
+            int32_t addr = program[pc++];
+            Value cond = pop();
+            if (!IS_INT(cond)) {
+                cerr << "JNZ expects integer condition\n";
+                running = false;
+                break;
+            }
+            if (AS_INT(cond) != 0) {
+                if (!validAddress(addr)) {
+                    cerr << "Invalid JNZ address\n";
+                    running = false;
+                    break;
+                }
+                pc = addr;
+            }
+            break;
+        }
+
+        case OP_STORE: {
+            int32_t idx = program[pc++];
+            Value v = pop();
+            if (!IS_INT(v)) {
+                cerr << "STORE expects integer\n";
+                running = false;
+                break;
+            }
+            memory[idx] = AS_INT(v);
+            break;
+        }
+
+        case OP_LOAD: {
+            int32_t idx = program[pc++];
+            push(INT_VAL(memory[idx]));
+            updateMaxStackDepth();
+            break;
+        }
+
+
+
+        case OP_HALT: {
+            running = false;
+            return;
+        }   
+
+        case OP_CALL: {
+            int32_t addr = program[pc++];
+            if (!validAddress(addr)) {
+                cerr << "Invalid CALL address\n";
+                running = false;
+                break;
+            }
+
+            callStack.push_back(pc);  
+            pc = addr;                
             break;
         }
         
-        // (You can update SUB, MUL, DIV similarly if needed for Lab 4 compatibility)
-        // For Lab 5 GC tests, we don't strictly use these math ops.
+        case OP_RET: {
+            if (callStack.empty()) {
+                cerr << "RET with empty call stack\n";
+                running = false;
+                break;
+            }
 
-        case OP_HALT:
-            running = false;
+            pc = callStack.back();
+            callStack.pop_back();
             break;
+        }
+
+        default:
+            cerr << "Unknown opcode " << opcode << " at PC = " << (pc - 1) << 
+             ". Possible invalid jump target." << endl;
+            running = false;
+
     }
 }
 
 void VM::run() {
-    while (running && pc < (int)program.size()) {
-        execute(program[pc++]);
+    int steps = 0;
+    const int MAX_STEPS = 1000000;
+    while (running) {
+        if (pc < 0 || static_cast<size_t>(pc) >= program.size()) {
+            cerr << "PC out of bounds: " << pc << endl;
+            break;
+        }
+        int32_t opcode = program[pc];
+        pc++;                    
+        instructionCount++;      
+        execute(opcode);
+
+        if (++steps > MAX_STEPS) {
+            cerr << "Execution aborted: possible infinite loop\n";
+            break;
+        }
     }
 }
+
+void VM::updateMaxStackDepth() {
+    if (stack.size() > maxStackDepth) {
+        maxStackDepth = stack.size();
+    }
+}
+
+void VM::printFinalStack() {
+    cout << "\n=== VM HALTED ===\n";
+    if (stack.empty()) {
+        cout << "Stack is empty\n";
+    } else {
+        cout << "Final Stack (bottom → top): ";
+
+        for (const Value& v : stack) {
+            if (IS_INT(v))
+                cout << AS_INT(v) << " ";
+            else
+                cout << "<obj> ";
+        }
+        if (IS_INT(stack.back()))
+            cout << "Top of Stack (RESULT): " << AS_INT(stack.back()) << endl;
+        else
+            cout << "Top of Stack (RESULT): <obj>" << endl;
+
+    }
+}
+void VM::printStats() {
+    cout << "\n=== Execution Statistics ===\n";
+    cout << "Instructions executed: " << instructionCount << endl;
+    cout << "Max stack depth: " << maxStackDepth << endl;
+}
+
+bool VM::validAddress(int addr) {
+    return addr >= 0 && static_cast<size_t>(addr) < program.size();
+}
+
+bool VM::validMemory(int idx) {
+    return idx >= 0 && static_cast<size_t>(idx) < memory.size();
+}
+
