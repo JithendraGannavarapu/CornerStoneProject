@@ -40,7 +40,7 @@ vector<int32_t> assemble(const string& filename) {
         {"DIV", OP_DIV},   {"CMP", OP_CMP},
         {"JMP", OP_JMP},   {"JZ", OP_JZ},   {"JNZ", OP_JNZ},
         {"CALL", OP_CALL}, {"RET", OP_RET},
-        {"LOAD", OP_LOAD}, {"STORE", OP_STORE},
+        {"LOAD", OP_LOAD}, {"STORE", OP_STORE}, 
         {"HALT", OP_HALT}
     };
 

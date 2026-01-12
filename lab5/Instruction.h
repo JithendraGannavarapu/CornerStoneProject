@@ -24,6 +24,7 @@ enum Opcode : int32_t {
     OP_CALL = 0x40,
     OP_RET  = 0x41,
 
+
     OP_HALT = 0xFF
 };
 

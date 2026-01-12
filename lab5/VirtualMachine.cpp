@@ -1,6 +1,8 @@
 #include "VirtualMachine.h"
 #include "Instruction.h"
 #include <iostream>
+#include "Object.h"
+#include "heap.h"
 
 using namespace std;
 
