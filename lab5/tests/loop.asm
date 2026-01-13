@@ -1,0 +1,14 @@
+# Simple loop test
+PUSH 2
+
+LOOP:
+DUP
+PUSH 10
+CMP
+JZ END
+PUSH 3
+ADD
+JMP LOOP
+
+END:
+HALT

@@ -2,7 +2,7 @@
 #define OBJECT_H
 
 enum ObjectType {
-    OBJ_PAIR
+    OBJ_PAIR 
 };
 
 struct Object {
@@ -12,7 +12,7 @@ struct Object {
 };
 
 struct ObjPair {
-    Object obj;         
+    Object obj;        
     Object* left;       
     Object* right;      
 };

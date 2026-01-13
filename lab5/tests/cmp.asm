@@ -1,0 +1,11 @@
+# Comparison test
+PUSH 5
+PUSH 10
+CMP
+JZ FAIL
+PUSH 1
+HALT
+
+FAIL:
+PUSH 0
+HALT
