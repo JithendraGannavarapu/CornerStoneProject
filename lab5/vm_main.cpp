@@ -3,9 +3,9 @@
 #include "Value.h"
 #include <iostream>
 
-// GC functions
-void gc_mark_from_vm(const VM& vm);
+void gc_collect(const VM& vm);
 extern Object* heap;
+
 
 int main() {
     std::vector<int32_t> dummy;
@@ -26,13 +26,18 @@ int main() {
     vm.pushTestValue(OBJ_VAL(obj1));
     vm.pushTestValue(INT_VAL(42));
 
-    // Mark phase
-    gc_mark_from_vm(vm);
+    gc_collect(vm);
 
-    // Results
-    std::cout << "obj1 marked = " << obj1->marked << std::endl;
-    std::cout << "obj2 marked = " << obj2->marked << std::endl;
-    std::cout << "obj3 marked = " << obj3->marked << std::endl;
+    std::cout << "\nHeap after GC:\n";
+    Object* cur = heap;
+    int count = 0;
+    while (cur) {
+        std::cout << "Live object at " << cur << std::endl;
+        cur = cur->next;
+        count++;
+    }
+    std::cout << "Live object count = " << count << std::endl;
+
 
     return 0;
 }

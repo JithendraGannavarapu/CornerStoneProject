@@ -16,3 +16,28 @@ void gc_mark_from_vm(const VM& vm) {
         }
     }
 }
+
+#include <iostream>
+
+void gc_sweep() {
+    Object** obj = &heap;
+
+    while (*obj != nullptr) {
+        if (!(*obj)->marked) {
+            // Garbage object → remove from heap
+            Object* unreached = *obj;
+            *obj = unreached->next;
+
+            delete unreached;   // free memory
+        } else {
+            // Live object → unmark for next GC cycle
+            (*obj)->marked = false;
+            obj = &((*obj)->next);
+        }
+    }
+}
+void gc_collect(const VM& vm) {
+    gc_mark_from_vm(vm);
+    gc_sweep();
+}
+
