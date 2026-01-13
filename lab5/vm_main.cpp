@@ -1,32 +1,38 @@
-#include <iostream>
-#include <fstream>
 #include "VirtualMachine.h"
+#include "Object.h"
+#include "Value.h"
+#include <iostream>
 
-using namespace std;
+// GC functions
+void gc_mark_from_vm(const VM& vm);
+extern Object* heap;
 
-int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        cerr << "Usage: ./vm program.byc\n";
-        return 1;
-    }
+int main() {
+    std::vector<int32_t> dummy;
+    VM vm(dummy);
 
-    ifstream in(argv[1], ios::binary);
-    if (!in) {
-        cerr << "Cannot open bytecode file\n";
-        return 1;
-    }
+    // Create heap objects
+    Object* obj1 = new Object{OBJ_DUMMY, false, nullptr};
+    Object* obj2 = new Object{OBJ_DUMMY, false, nullptr};
+    Object* obj3 = new Object{OBJ_DUMMY, false, nullptr};
 
-    in.seekg(0, ios::end);
-    size_t size = in.tellg();
-    in.seekg(0, ios::beg);
+    // Heap list
+    obj1->next = obj2;
+    obj2->next = obj3;
+    obj3->next = nullptr;
+    heap = obj1;
 
-    vector<int32_t> bytecode(size / sizeof(int32_t));
-    in.read(reinterpret_cast<char*>(bytecode.data()), size);
-    in.close();
+    // Push roots
+    vm.pushTestValue(OBJ_VAL(obj1));
+    vm.pushTestValue(INT_VAL(42));
 
-    VM vm(bytecode);
-    vm.run();
-    vm.printFinalStack();
-    vm.printStats();
+    // Mark phase
+    gc_mark_from_vm(vm);
+
+    // Results
+    std::cout << "obj1 marked = " << obj1->marked << std::endl;
+    std::cout << "obj2 marked = " << obj2->marked << std::endl;
+    std::cout << "obj3 marked = " << obj3->marked << std::endl;
+
     return 0;
 }

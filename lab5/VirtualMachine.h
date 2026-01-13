@@ -10,7 +10,8 @@ public:
 
     VM(const std::vector<int32_t>& bytecode);
     void run();
-    const std::vector<Value>& getStack() const { return stack; }
+    const vector<Value>& getStack() const { return stack; }
+    void pushTestValue(Value v) {stack.push_back(v);}
     void printFinalStack();
     void printStats();
 
