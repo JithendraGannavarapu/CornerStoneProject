@@ -4,7 +4,7 @@
 
 using namespace std;
 
-// --- Constructor & Destructor ---
+
 VM::VM(const vector<int32_t>& bytecode)
     : program(bytecode), 
       memory(1024),      // Default Value() is INT 0
@@ -15,7 +15,6 @@ VM::VM(const vector<int32_t>& bytecode)
       running(true) {}
 
 VM::~VM() {
-    // Cleanup: Free all objects when VM dies
     Object* obj = objects;
     while (obj != nullptr) {
         Object* next = obj->next;
@@ -24,7 +23,6 @@ VM::~VM() {
     }
 }
 
-// --- Status Helpers ---
 int VM::getObjectCount() {
     int count = 0;
     Object* obj = objects;
@@ -37,18 +35,16 @@ int VM::getObjectCount() {
 
 void VM::printHeapStatus() {
     int count = getObjectCount();
-    // Assuming ObjPair size for approximation
     cout << "   [Heap Status] Active Objects: " << count 
          << " | Bytes Used (approx): " << count * sizeof(ObjPair) << " bytes" << endl;
 }
 
-// --- Stack Helpers ---
 void VM::push(Value v) {
     stack.push_back(v);
     updateMaxStackDepth();
 }
 
-void VM::pushStack(Value v) { // Public wrapper for tests
+void VM::pushStack(Value v) {
     push(v);
 }
 
@@ -78,15 +74,11 @@ Object* VM::allocatePair(Object* a, Object* b) {
     return (Object*)pair;
 }
 
-// --- Lab 5: Garbage Collector ---
-
-// 1. Mark Phase (Recursive)
 void VM::markObject(Object* obj) {
     if (obj == nullptr || obj->marked) return;
     
-    obj->marked = true; // Mark self
+    obj->marked = true; 
 
-    // RECURSION: Check children
     if (obj->type == OBJ_PAIR) {
         ObjPair* pair = (ObjPair*)obj;
         markObject(pair->left);
@@ -98,19 +90,16 @@ void VM::markValue(Value v) {
     if (IS_OBJ(v)) markObject(AS_OBJ(v));
 }
 
-// 2. Sweep Phase (Returns count of freed objects)
 int VM::sweep() {
     int freedCount = 0;
     Object** object = &objects;
     while (*object != nullptr) {
         if (!(*object)->marked) {
-            // Unreached -> Garbage
             Object* unreached = *object;
-            *object = unreached->next; // Unlink
+            *object = unreached->next; 
             delete unreached;          // Free C++ memory
             freedCount++;
         } else {
-            // Reached -> Reset mark for next cycle
             (*object)->marked = false;
             object = &(*object)->next;
         }
@@ -118,17 +107,13 @@ int VM::sweep() {
     return freedCount;
 }
 
-// 3. GC Driver (Returns Stats)
 GCStats VM::gc() {
     int initial = getObjectCount();
 
-    // Mark Roots: Stack
     for (const Value& v : stack) markValue(v);
-    
-    // Mark Roots: Memory (Globals)
+
     for (const Value& v : memory) markValue(v);
 
-    // Sweep
     int freed = sweep();
     
     GCStats stats;
@@ -138,7 +123,6 @@ GCStats VM::gc() {
     return stats;
 }
 
-// --- Execution Engine ---
 void VM::execute(int32_t opcode) {
     switch (opcode) {
         case OP_PUSH:
@@ -256,7 +240,7 @@ void VM::execute(int32_t opcode) {
             int32_t idx = program[pc++];
             Value v = pop();
             if (validMemory(idx)) {
-                memory[idx] = v; // Allow storing Objects
+                memory[idx] = v; 
             } else {
                 cerr << "Invalid STORE index\n";
                 running = false;
@@ -267,7 +251,7 @@ void VM::execute(int32_t opcode) {
         case OP_LOAD: {
             int32_t idx = program[pc++];
             if (validMemory(idx)) {
-                push(memory[idx]); // Allow loading Objects
+                push(memory[idx]); 
             } else {
                 cerr << "Invalid LOAD index\n";
                 running = false;

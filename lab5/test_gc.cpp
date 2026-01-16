@@ -1,17 +1,15 @@
 #include <iostream>
 #include <cassert>
 #include <vector>
-#include <iomanip> // For nice formatting
+#include <iomanip> 
 #include "VirtualMachine.h"
 #include "Object.h"
 #include "Value.h"
 
 using namespace std;
 
-// Helper Macro to push Objects easily
 #define PUSH_OBJ(vm, obj) vm.pushStack(OBJ_VAL(obj))
 
-// --- Reporting Helpers ---
 
 void printReport(const string& phase, const GCStats& stats) {
     cout << "   [" << phase << "] ";
@@ -37,10 +35,6 @@ void runTest(const string& name, void (*testFunc)()) {
     }
 }
 
-// --- Test Cases ---
-
-// 1. Basic Reachability (PDF 1.6.1)
-// Verify that objects directly reachable from the stack are preserved.
 void testBasicReachability() {
     VM vm({});
     Object* a = vm.allocatePair(nullptr, nullptr);
@@ -56,11 +50,9 @@ void testBasicReachability() {
     cout << "   [Check] Object survived as expected." << endl;
 }
 
-// 2. Unreachable Objects (PDF 1.6.2)
-// Verify that unreachable objects are reclaimed.
 void testUnreachable() {
     VM vm({});
-    vm.allocatePair(nullptr, nullptr); // Not pushed to stack
+    vm.allocatePair(nullptr, nullptr); 
     
     vm.printHeapStatus();
     GCStats stats = vm.gc();
@@ -72,14 +64,12 @@ void testUnreachable() {
     cout << "   [Check] Unreachable object was correctly freed." << endl;
 }
 
-// 3. Transitive Reachability (PDF 1.6.3)
-// Verify recursive marking of referenced objects (A -> B).
 void testTransitive() {
     VM vm({});
     Object* a = vm.allocatePair(nullptr, nullptr);
-    Object* b = vm.allocatePair(a, nullptr); // b points to a
+    Object* b = vm.allocatePair(a, nullptr); 
     
-    PUSH_OBJ(vm, b); // Only push 'b' (root)
+    PUSH_OBJ(vm, b); 
     
     vm.printHeapStatus();
     GCStats stats = vm.gc();
@@ -89,14 +79,11 @@ void testTransitive() {
     cout << "   [Check] Child object 'a' was transitively marked." << endl;
 }
 
-// 4. Cyclic References (PDF 1.6.4)
-// Ensure that cycles (A -> B -> A) are correctly handled.
 void testCycle() {
     VM vm({});
     Object* a = vm.allocatePair(nullptr, nullptr);
     Object* b = vm.allocatePair(a, nullptr);
-    
-    // Create Cycle: a -> b (via right), b -> a (via left from alloc)
+
     ((ObjPair*)a)->right = b; 
     
     PUSH_OBJ(vm, a);
@@ -109,8 +96,6 @@ void testCycle() {
     cout << "   [Check] Cycle detected and preserved." << endl;
 }
 
-// 5. Deep Object Graph (PDF 1.6.5)
-// Stress-test recursive marking with a list 10,000 deep.
 void testDeepGraph() {
     VM vm({});
     Object* root = vm.allocatePair(nullptr, nullptr);
@@ -130,22 +115,15 @@ void testDeepGraph() {
     
     GCStats stats = vm.gc();
     printReport("GC Cycle", stats);
-    
-    // 10,000 children + 1 root = 10,001
+ 
     assert(stats.objectsSurvived == 10001);
     cout << "   [Check] Recursion depth handled successfully." << endl;
 }
 
-// 6. Closure Capture (PDF 1.6.6)
-// Ensure closures extend lifetimes of captured objects.
 void testClosure() {
     VM vm({});
-    
-    // Simulate Environment & Function
     Object* env = vm.allocatePair(nullptr, nullptr); 
     Object* fn = vm.allocatePair(nullptr, nullptr); 
-    
-    // Simulate Closure (holds Function + Environment)
     Object* closure = vm.allocatePair(fn, env);
     
     PUSH_OBJ(vm, closure);
@@ -158,14 +136,11 @@ void testClosure() {
     cout << "   [Check] Closure kept environment alive." << endl;
 }
 
-// 7. Stress Allocation (PDF 1.6.7)
-// Validate heap integrity under heavy allocation.
 void testStress() {
     VM vm({});
     cout << "   [Allocating] Creating 10,000 garbage objects..." << endl;
     for (int i = 0; i < 10000; i++) {
         vm.allocatePair(nullptr, nullptr);
-        // Created but not pushed -> immediate garbage
     }
     
     vm.printHeapStatus();
@@ -181,7 +156,6 @@ void testStress() {
     }
 }
 
-// --- Main Driver ---
 
 int main() {
     cout << "Starting Lab 5 Garbage Collector Test Suite..." << endl;
