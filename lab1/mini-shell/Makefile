@@ -3,7 +3,7 @@
 CC = gcc
 CFLAGS = -std=gnu11 -Wall -Wextra
 TARGET = shell
-SRC = shell.c
+SRC = temp.c
 
 all: $(TARGET)
 

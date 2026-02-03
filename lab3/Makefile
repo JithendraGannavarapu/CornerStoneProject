@@ -1,29 +1,27 @@
-# Compiler and Flags
-CXX      = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra
+# Define the source directory
+SRC = src
 
-# Targets
-TARGETS  = assemble vm
+# The final executable name
+TARGET = parser
 
-# Default rule: Build everything
-all: $(TARGETS)
+# Default target
+all: $(TARGET)
 
-# Rule to build the Assembler
-assemble: Assembler.cpp assemble.cpp Assembler.h Instruction.h
-	$(CXX) $(CXXFLAGS) -o assemble Assembler.cpp assemble.cpp
+# Link everything together
+# We explicitly tell GCC to find files in the 'src' folder
+$(TARGET): $(SRC)/lex.yy.c $(SRC)/parser.tab.c $(SRC)/ast.c $(SRC)/main.c
+	gcc -o $(TARGET) $(SRC)/lex.yy.c $(SRC)/parser.tab.c $(SRC)/ast.c $(SRC)/main.c -lfl
 
-# Rule to build the Virtual Machine
-vm: VirtualMachine.cpp vm_main.cpp VirtualMachine.h Instruction.h
-	$(CXX) $(CXXFLAGS) -o vm VirtualMachine.cpp vm_main.cpp
+# Compile Flex
+# Output (-o) goes into src/lex.yy.c so it sits next to the header files
+$(SRC)/lex.yy.c: $(SRC)/lexer.l $(SRC)/parser.tab.h
+	flex -o $(SRC)/lex.yy.c $(SRC)/lexer.l
 
-# Rule to run tests (Assuming you have the run.sh script)
-test: all
-	chmod +x run.sh
-	./run.sh
+# Compile Bison
+# Output (-o) goes into src/parser.tab.c (and creates parser.tab.h there too)
+$(SRC)/parser.tab.c $(SRC)/parser.tab.h: $(SRC)/parser.y
+	bison -d $(SRC)/parser.y -o $(SRC)/parser.tab.c
 
-# Clean up build artifacts and bytecode files
+# Clean up generated files inside src/ and the executable in root
 clean:
-	rm -f $(TARGETS)
-	rm -f tests/*.byc
-
-.PHONY: all clean test
+	rm -f $(TARGET) $(SRC)/lex.yy.c $(SRC)/parser.tab.c $(SRC)/parser.tab.h

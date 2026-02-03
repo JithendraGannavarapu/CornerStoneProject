@@ -1,12 +1,14 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/ptrace.h>
 #include <sys/types.h>
+#include <sys/ptrace.h>
 #include <sys/wait.h>
 #include <sys/user.h>
+#include <unistd.h>
 #include <signal.h>
+#include <errno.h>
 
 static long bp_addr = 0;
 static long bp_saved_instr = 0;
@@ -15,7 +17,6 @@ static int  bp_hits = 0;
 
 static pid_t child_pid = -1;
 static int last_signal = 0;
-
 
 void prompt() {
     printf("dbg> ");
@@ -30,7 +31,7 @@ void help() {
         "  info bp         show breakpoint info\n"
         "  run / continue  continue execution\n"
         "  step            execute one instruction\n"
-        "  regs            show RIP register\n"
+        "  regs            show registers\n"
         "  where           show stop reason and RIP\n"
         "  help            show this help\n"
         "  quit            exit debugger\n"
@@ -38,7 +39,13 @@ void help() {
 }
 
 void set_breakpoint(pid_t pid, long addr) {
+    errno = 0;
     bp_saved_instr = ptrace(PTRACE_PEEKDATA, pid, addr, NULL);
+    if (errno != 0) {
+        perror("ptrace peek");
+        return;
+    }
+
     long trap = (bp_saved_instr & ~0xff) | 0xcc;
     ptrace(PTRACE_POKEDATA, pid, addr, trap);
 
@@ -69,7 +76,12 @@ void fix_rip(pid_t pid) {
 void show_regs(pid_t pid) {
     struct user_regs_struct regs;
     ptrace(PTRACE_GETREGS, pid, NULL, &regs);
-    printf("RIP = 0x%llx\n", regs.rip);
+    printf("Registers:\n");
+    printf("  RIP: 0x%llx  RSP: 0x%llx\n", regs.rip, regs.rsp);
+    printf("  RBP: 0x%llx  RAX: 0x%llx\n", regs.rbp, regs.rax);
+    printf("  RBX: 0x%llx  RCX: 0x%llx\n", regs.rbx, regs.rcx);
+    printf("  RDX: 0x%llx  RSI: 0x%llx\n", regs.rdx, regs.rsi);
+    printf("  RDI: 0x%llx\n", regs.rdi);
 }
 
 void show_where(pid_t pid) {
@@ -89,7 +101,6 @@ void show_bp_info() {
     printf("  Enabled : yes\n");
     printf("  Hits    : %d\n", bp_hits);
 }
-
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -128,15 +139,12 @@ int main(int argc, char *argv[]) {
             else
                 set_breakpoint(child_pid, addr);
         }
-
         else if (strcmp(cmd, "clear") == 0) {
             clear_breakpoint(child_pid);
         }
-
         else if (strcmp(cmd, "info bp") == 0) {
             show_bp_info();
         }
-
         else if (strcmp(cmd, "step") == 0) {
             ptrace(PTRACE_SINGLESTEP, child_pid, NULL, NULL);
             waitpid(child_pid, &status, 0);
@@ -145,47 +153,71 @@ int main(int argc, char *argv[]) {
                 last_signal = WSTOPSIG(status);
                 show_regs(child_pid);
             }
+            else if (WIFEXITED(status)) {
+                printf("Program exited normally\n");
+                break;
+            }
         }
-
         else if (strcmp(cmd, "run") == 0 || strcmp(cmd, "continue") == 0) {
+            struct user_regs_struct regs;
+            ptrace(PTRACE_GETREGS, child_pid, NULL, &regs);
+
+            if (bp_enabled && regs.rip == bp_addr) {
+                ptrace(PTRACE_SINGLESTEP, child_pid, NULL, NULL);
+                waitpid(child_pid, &status, 0);
+
+                if (WIFEXITED(status) || WIFSIGNALED(status)) {
+                    printf("Program exited during step-over\n");
+                    break;
+                }
+
+                long trap = (bp_saved_instr & ~0xff) | 0xcc;
+                ptrace(PTRACE_POKEDATA, child_pid, bp_addr, trap);
+            }
+
             ptrace(PTRACE_CONT, child_pid, NULL, NULL);
             waitpid(child_pid, &status, 0);
 
             if (WIFSTOPPED(status)) {
                 last_signal = WSTOPSIG(status);
-                printf("Stopped by signal %d\n", last_signal);
-
-                if (bp_enabled && last_signal == SIGTRAP) {
-                    bp_hits++;
-                    ptrace(PTRACE_POKEDATA, child_pid, bp_addr, bp_saved_instr);
-                    fix_rip(child_pid);
+                
+                if (last_signal == SIGTRAP) {
+                    ptrace(PTRACE_GETREGS, child_pid, NULL, &regs);
+                    if (bp_enabled && regs.rip == bp_addr + 1) {
+                        printf("Hit breakpoint at 0x%lx\n", bp_addr);
+                        bp_hits++;
+                        ptrace(PTRACE_POKEDATA, child_pid, bp_addr, bp_saved_instr);
+                        fix_rip(child_pid);
+                    } else {
+                        printf("Stopped by SIGTRAP\n");
+                    }
+                } else {
+                    printf("Stopped by signal %d\n", last_signal);
                 }
             }
-
-            if (WIFEXITED(status)) {
-                printf("Program exited normally\n");
+            else if (WIFEXITED(status)) {
+                printf("Program exited normally with code %d\n", WEXITSTATUS(status));
+                break;
+            }
+            else if (WIFSIGNALED(status)) {
+                printf("Program terminated by signal %d\n", WTERMSIG(status));
                 break;
             }
         }
-
         else if (strcmp(cmd, "regs") == 0) {
             show_regs(child_pid);
         }
-
         else if (strcmp(cmd, "where") == 0) {
             show_where(child_pid);
         }
-
         else if (strcmp(cmd, "help") == 0) {
             help();
         }
-
         else if (strcmp(cmd, "quit") == 0) {
             ptrace(PTRACE_DETACH, child_pid, NULL, NULL);
             printf("Debugger exited\n");
             break;
         }
-
         else {
             printf("Unknown command (type 'help')\n");
         }

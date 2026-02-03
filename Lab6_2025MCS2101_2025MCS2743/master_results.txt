@@ -1,0 +1,64 @@
+=== Integrated System Shell (Lab 6) ===
+mini-shell:/Users/jithendra/Desktop/Lab6_2025MCS2101_2025MCS2743 $ PID = 1
+mini-shell:/Users/jithendra/Desktop/Lab6_2025MCS2101_2025MCS2743 $ Entering debug mode. Type 'exit' to leave.
+(debug) VAR_DECL: x
+  VALUE: 10
+VAR_DECL: y
+  VALUE: 20
+IF
+  CONDITION:
+    OPERATOR: <
+      ID: x
+      ID: y
+  THEN:
+    UNARY: print
+      OPERATOR: +
+        ID: x
+        ID: y
+VAR_DECL: i
+  VALUE: 0
+WHILE
+  CONDITION:
+    OPERATOR: <
+      ID: i
+      VALUE: 3
+  BODY:
+    ASSIGNMENT: i
+      OPERATOR: +
+        ID: i
+        VALUE: 1
+UNARY: print
+  ID: i
+(debug)   0: 0x01 (PUSH ) 10
+  2: 0x30 (STORE) 0
+  4: 0x01 (PUSH ) 20
+  6: 0x30 (STORE) 1
+  8: 0x31 (LOAD ) 0
+ 10: 0x31 (LOAD ) 1
+ 12: 0x14 (CMP  )
+ 13: 0x21 (JZ   ) 21
+ 15: 0x31 (LOAD ) 0
+ 17: 0x31 (LOAD ) 1
+ 19: 0x10 (ADD  )
+ 20: 0x42 (PRINT)
+ 21: 0x01 (PUSH ) 0
+ 23: 0x30 (STORE) 2
+ 25: 0x31 (LOAD ) 2
+ 27: 0x01 (PUSH ) 3
+ 29: 0x14 (CMP  )
+ 30: 0x21 (JZ   ) 41
+ 32: 0x31 (LOAD ) 2
+ 34: 0x01 (PUSH ) 1
+ 36: 0x10 (ADD  )
+ 37: 0x30 (STORE) 2
+ 39: 0x20 (JMP  ) 25
+ 41: 0x31 (LOAD ) 2
+ 43: 0x42 (PRINT)
+ 44: 0xff (HALT )
+(debug) (debug) --- VM Register State ---
+PC    : 2
+Stack : [ 10 ]
+(debug) Heap objects : 0
+(debug) Output : 30
+Output : 3
+(debug) (debug) (debug) mini-shell:/Users/jithendra/Desktop/Lab6_2025MCS2101_2025MCS2743 $ 
